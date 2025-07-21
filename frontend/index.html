@@ -1,0 +1,385 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Seat Availability</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #e7cdcd;
+
+    }
+    .head{
+      text-align: center;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+       background-color: #c7ffd1;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+    .cancel-btn {
+      background-color: red;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      margin-top: 5px;
+      cursor: pointer;
+    }
+    .book-form{
+      margin-bottom: 12px;
+    }
+    .book-form input {
+      margin-right: 10px;
+    }
+    .dropdown {
+      margin-top: 10px;
+    }
+    .booking-entry {
+      border-top: 1px solid #ccc;
+      margin-top: 5px;
+      padding-top: 5px;
+    }
+    
+  </style>
+</head>
+<body>
+  <h1 class="head" >Real-Time Seat Availability</h1>
+
+  <div class="book-form">
+    <input type="text" id="seatId" placeholder="Seat ID" required />
+    <input type="text" id="location" placeholder="Location" required />
+    <input type="datetime-local" id="startTime" required />
+    <input type="number" id="duration" placeholder="Duration (min)" required />
+    <input type="text" id="bookedBy" placeholder="Your Name" required />
+    <button onclick="bookSeat()">Book Seat</button>
+  </div>
+
+  <div id="seat-grid" class="grid"></div>
+
+  <script>
+    const grid = document.getElementById("seat-grid");
+
+    function fetchSeats() {
+      fetch("http://localhost:8080/seat/all")
+        .then((res) => res.json())
+        .then((data) => {
+          grid.innerHTML = "";
+          data.forEach((seat) => {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const bookingId = `bookings-${seat.seatId}`;
+
+            card.innerHTML = `
+              <h3>${seat.seatId}</h3>
+              <p><strong>Location:</strong> ${seat.location}</p>
+              <button onclick="toggleBookings('${bookingId}')">Show Bookings</button>
+              <div id="${bookingId}" class="dropdown" style="display:none;"></div>
+            `;
+
+            grid.appendChild(card);
+
+            const bookingsContainer = document.getElementById(bookingId);
+
+            if (seat.bookings && seat.bookings.length > 0) {
+              seat.bookings.forEach((booking) => {
+                const start = new Date(booking.startTime);
+                const end = new Date(start.getTime() + booking.durationMinutes * 60000);
+                const now = new Date();
+
+                const bookingInfo = document.createElement("div");
+                bookingInfo.className = "booking-entry";
+                bookingInfo.innerHTML = `
+                  <p>Booked By: <strong>${booking.bookedBy}</strong></p>
+                  <p>From: ${start.toLocaleString()}</p>
+                  <p>To: ${end.toLocaleString()}</p>
+                `;
+
+                if (end > now) {
+                  const cancelBtn = document.createElement("button");
+                  cancelBtn.className = "cancel-btn";
+                  cancelBtn.innerText = "Cancel";
+                  cancelBtn.onclick = () => cancelBooking(seat.seatId, booking.bookedBy, booking.startTime);
+                  bookingInfo.appendChild(cancelBtn);
+                }
+
+                bookingsContainer.appendChild(bookingInfo);
+              });
+            } else {
+              bookingsContainer.innerHTML = "<p>No bookings.</p>";
+            }
+          });
+        })
+        .catch((err) => {
+          grid.innerHTML = "<p>Error loading seats.</p>";
+          console.error(err);
+        });
+    }
+
+    function toggleBookings(id) {
+      const section = document.getElementById(id);
+      section.style.display = section.style.display === "none" ? "block" : "none";
+    }
+
+    function bookSeat() {
+      const seatId = document.getElementById("seatId").value;
+      const location = document.getElementById("location").value;
+      const startTime = document.getElementById("startTime").value;
+      const duration = document.getElementById("duration").value;
+      const bookedBy = document.getElementById("bookedBy").value;
+
+      fetch("http://localhost:8080/seat/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seatId, location })
+      })
+        .then(() => {
+          const url = `http://localhost:8080/seat/book?seatId=${encodeURIComponent(seatId)}&bookedBy=${encodeURIComponent(bookedBy)}&startTime=${encodeURIComponent(startTime)}&durationMinutes=${duration}`;
+          return fetch(url, { method: "POST" });
+        })
+        .then((res) => res.text())
+        .then((msg) => {
+          alert(msg);
+          fetchSeats();
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("Booking failed.");
+        });
+    }
+
+    function cancelBooking(seatId, bookedBy, startTime) {
+      const input = prompt("Confirm your name to cancel:");
+      if (input !== bookedBy) {
+        alert("You are not authorized to cancel this booking.");
+        return;
+      }
+
+      const url = `http://localhost:8080/seat/cancel?seatId=${encodeURIComponent(seatId)}&bookedBy=${encodeURIComponent(bookedBy)}&startTime=${encodeURIComponent(startTime)}`;
+      fetch(url, { method: "PUT" })
+        .then((res) => res.text())
+        .then((msg) => {
+          alert(msg);
+          fetchSeats();
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("Cancellation failed.");
+        });
+    }
+
+    fetchSeats();
+    setInterval(fetchSeats, 60000);
+  </script>
+</body>
+</html> -->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Seat Availability</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #e7cdcd;
+    }
+    .head {
+      text-align: center;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background-color: #c7ffd1;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+    .cancel-btn {
+      background-color: red;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      margin-top: 5px;
+      cursor: pointer;
+    }
+    /* .book-form {
+      margin-bottom: 12px;
+    } */
+    .book-form input {
+      margin-right: 10px;
+      margin-bottom: 12px;
+
+    }
+    .dropdown {
+      margin-top: 10px;
+    }
+    .booking-entry {
+      border-top: 1px solid #ccc;
+      margin-top: 5px;
+      padding-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="head">Real-Time Seat Availability</h1>
+
+  <div class="book-form">
+    <input type="text" id="seatId" placeholder="Seat ID" required />
+    <input type="text" id="location" placeholder="Location" required />
+    <input type="datetime-local" id="startTime" required />
+    <input type="number" id="duration" placeholder="Duration (min)" required />
+    <input type="text" id="bookedBy" placeholder="Your Name" required />
+    <input type="password" id="password" placeholder="Booking Password" required />
+    <button onclick="bookSeat()">Book Seat</button>
+  </div>
+
+  <div id="seat-grid" class="grid"></div>
+
+  <script>
+    const grid = document.getElementById("seat-grid");
+
+    function fetchSeats() {
+      fetch("http://localhost:8080/seat/all")
+        .then((res) => res.json())
+        .then((data) => {
+          grid.innerHTML = "";
+          data.forEach((seat) => {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const bookingId = `bookings-${seat.seatId}`;
+
+            card.innerHTML = `
+              <h3>${seat.seatId}</h3>
+              <p><strong>Location:</strong> ${seat.location}</p>
+              <button onclick="toggleBookings('${bookingId}')">Show Bookings</button>
+              <div id="${bookingId}" class="dropdown" style="display:none;"></div>
+            `;
+
+            grid.appendChild(card);
+
+            const bookingsContainer = document.getElementById(bookingId);
+
+            if (seat.bookings && seat.bookings.length > 0) {
+              bookingsContainer.innerHTML = "";
+              seat.bookings.forEach((booking) => {
+                const start = new Date(booking.startTime);
+                const end = new Date(start.getTime() + booking.durationMinutes * 60000);
+                const now = new Date();
+
+                const bookingInfo = document.createElement("div");
+                bookingInfo.className = "booking-entry";
+                bookingInfo.innerHTML = `
+                  <p>Booked By: <strong>${booking.bookedBy}</strong></p>
+                  <p>From: ${start.toLocaleString()}</p>
+                  <p>To: ${end.toLocaleString()}</p>
+                `;
+
+                if (end > now) {
+                  const cancelBtn = document.createElement("button");
+                  cancelBtn.className = "cancel-btn";
+                  cancelBtn.innerText = "Cancel";
+                  cancelBtn.onclick = () =>
+                    cancelBooking(seat.seatId, booking.bookedBy, booking.startTime);
+                  bookingInfo.appendChild(cancelBtn);
+                }
+
+                bookingsContainer.appendChild(bookingInfo);
+              });
+            } else {
+              bookingsContainer.innerHTML = "<p>No bookings.</p>";
+            }
+          });
+        })
+        .catch((err) => {
+          grid.innerHTML = "<p>Error loading seats.</p>";
+          console.error(err);
+        });
+    }
+
+    function toggleBookings(id) {
+      const section = document.getElementById(id);
+      section.style.display = section.style.display === "none" ? "block" : "none";
+    }
+
+    function bookSeat() {
+      const seatId = document.getElementById("seatId").value;
+      const location = document.getElementById("location").value;
+      const startTime = document.getElementById("startTime").value;
+      const duration = document.getElementById("duration").value;
+      const bookedBy = document.getElementById("bookedBy").value;
+      const password = document.getElementById("password").value;
+
+      fetch("http://localhost:8080/seat/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seatId, location })
+      })
+        .then(() => {
+          const url = `http://localhost:8080/seat/book?seatId=${encodeURIComponent(
+            seatId
+          )}&bookedBy=${encodeURIComponent(bookedBy)}&startTime=${encodeURIComponent(
+            startTime
+          )}&durationMinutes=${duration}&password=${encodeURIComponent(password)}`;
+          return fetch(url, { method: "POST" });
+        })
+        .then((res) => res.text())
+        .then((msg) => {
+          alert(msg);
+        
+          fetchSeats();
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("Booking failed.");
+        });
+    }
+
+    function cancelBooking(seatId, bookedBy, startTime) {
+      const name = prompt("Enter your name to cancel:");
+      const password = prompt("Enter your booking password:");
+      if (!name || !password) {
+        alert("Cancellation aborted. Both fields are required.");
+        return;
+      }
+
+      const url = `http://localhost:8080/seat/cancel?seatId=${encodeURIComponent(
+        seatId
+      )}&bookedBy=${encodeURIComponent(name)}&startTime=${encodeURIComponent(
+        startTime
+      )}&password=${encodeURIComponent(password)}`;
+
+      fetch(url, { method: "PUT" })
+        .then((res) => res.text())
+        .then((msg) => {
+          alert(msg);
+          fetchSeats();
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("Cancellation failed.");
+        });
+    }
+
+    fetchSeats();
+    setInterval(fetchSeats, 60000);
+  </script>
+</body>
+</html>
